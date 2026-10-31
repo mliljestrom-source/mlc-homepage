@@ -1,0 +1,187 @@
+---
+import { INDUSTRIES } from '../lib/card-scanner/types';
+
+const fields: { key: string; label: string; type?: string; wide?: boolean }[] = [
+	{ key: 'firstName', label: 'First name' },
+	{ key: 'lastName', label: 'Last name' },
+	{ key: 'title', label: 'Position / title' },
+	{ key: 'company', label: 'Company' },
+	{ key: 'email', label: 'E-mail', type: 'email' },
+	{ key: 'phone', label: 'Phone', type: 'tel' },
+	{ key: 'mobile', label: 'Mobile', type: 'tel' },
+	{ key: 'website', label: 'Website' },
+	{ key: 'address', label: 'Address', wide: true },
+	{ key: 'linkedinUrl', label: 'LinkedIn URL', wide: true },
+];
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<meta name="robots" content="noindex,nofollow" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>Business Card Scanner</title>
+	</head>
+	<body>
+		<main>
+			<h1>Business Card Scanner</h1>
+
+			<details class="settings">
+				<summary>Settings</summary>
+				<label>
+					Access token
+					<input id="token" type="password" autocomplete="off" placeholder="CARD_SCANNER_ACCESS_TOKEN" />
+				</label>
+				<p class="hint">Stored only in this browser. Contacts are also stored only in this browser – export to Excel regularly.</p>
+			</details>
+
+			<section class="panel">
+				<h2>1. Scan a card</h2>
+				<div class="photos">
+					<label class="photo">
+						<span>Front</span>
+						<input id="front" type="file" accept="image/*" capture="environment" />
+						<img id="front-preview" alt="Front preview" hidden />
+					</label>
+					<label class="photo">
+						<span>Back (optional)</span>
+						<input id="back" type="file" accept="image/*" capture="environment" />
+						<img id="back-preview" alt="Back preview" hidden />
+					</label>
+				</div>
+				<div class="row">
+					<button id="scan-btn" class="primary" type="button">Read card</button>
+					<button id="manual-btn" type="button">Enter manually</button>
+				</div>
+			</section>
+
+			<p id="status" role="status" aria-live="polite"></p>
+
+			<section id="review" class="panel" hidden>
+				<h2 id="form-title">Check the scanned data</h2>
+				<form id="card-form">
+					<div class="grid">
+						{
+							fields.map((f) => (
+								<label class={f.wide ? 'wide' : ''}>
+									{f.label}
+									<input id={`f-${f.key}`} type={f.type ?? 'text'} />
+								</label>
+							))
+						}
+						<label class="industry">
+							Industry
+							<input id="f-industry" list="industries" placeholder="Choose or type an industry" />
+							<datalist id="industries">{INDUSTRIES.map((i) => <option value={i} />)}</datalist>
+						</label>
+						<label class="wide">
+							Notes
+							<textarea id="f-notes" rows="2"></textarea>
+						</label>
+					</div>
+					<div class="row">
+						<button class="primary" type="submit">Save contact</button>
+						<button id="cancel-btn" type="button">Cancel</button>
+					</div>
+				</form>
+			</section>
+
+			<section class="panel">
+				<h2>2. Contacts</h2>
+				<div class="row toolbar">
+					<select id="industry-filter" aria-label="Filter by industry"></select>
+					<input id="search" type="search" placeholder="Search…" />
+					<span id="count"></span>
+				</div>
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th data-sort="industry">Industry</th>
+								<th data-sort="lastName">Name</th>
+								<th data-sort="title">Position</th>
+								<th data-sort="company">Company</th>
+								<th data-sort="email">E-mail</th>
+								<th data-sort="status">Verification</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody id="contacts-body"></tbody>
+					</table>
+				</div>
+				<div class="row">
+					<button id="verify-all-btn" type="button" title="Checks the contacts currently shown">Verify shown contacts (Apollo)</button>
+				</div>
+			</section>
+
+			<section class="panel">
+				<h2>3. Excel</h2>
+				<div class="row">
+					<button id="export-btn" class="primary" type="button">Export shown contacts (.xlsx)</button>
+					<label class="inline"><input id="per-industry" type="checkbox" checked /> extra sheet per industry</label>
+				</div>
+				<div class="row">
+					<label class="inline">Import existing .xlsx (same column headers): <input id="import" type="file" accept=".xlsx" /></label>
+				</div>
+			</section>
+		</main>
+
+		<script>
+			import '../scripts/card-scanner/app';
+		</script>
+
+		<style is:global>
+			:root {
+				--blue: #1f4e79;
+				--border: #d0d7de;
+				font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+				color: #1f2328;
+				background: #f6f8fa;
+			}
+			body { margin: 0; }
+			main { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+			h1 { color: var(--blue); margin: 0.5rem 0 1rem; font-size: 1.6rem; }
+			h2 { font-size: 1.1rem; margin: 0 0 0.75rem; }
+			.panel, .settings { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+			.settings summary { cursor: pointer; font-weight: 600; }
+			.settings label { display: block; margin-top: 0.75rem; }
+			.hint { color: #57606a; font-size: 0.85rem; }
+			label { font-size: 0.85rem; color: #57606a; }
+			input, select, textarea { font: inherit; padding: 0.45rem 0.55rem; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; color: #1f2328; }
+			label > input, label > textarea { display: block; width: 100%; margin-top: 0.2rem; }
+			label.inline { display: inline-flex; gap: 0.4rem; align-items: center; }
+			label.inline > input { display: inline; width: auto; margin: 0; }
+			button { font: inherit; padding: 0.5rem 0.9rem; border-radius: 6px; border: 1px solid var(--border); background: #f6f8fa; cursor: pointer; }
+			button:disabled { opacity: 0.5; cursor: wait; }
+			button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+			.row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.75rem; }
+			.photos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+			.photo { display: flex; flex-direction: column; gap: 0.3rem; }
+			.photo img { max-width: 100%; max-height: 220px; object-fit: contain; border: 1px solid var(--border); border-radius: 6px; }
+			.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
+			.grid .wide { grid-column: 1 / -1; }
+			.grid .industry input { border-color: var(--blue); border-width: 2px; }
+			#status { min-height: 1.4em; margin: 0 0 1rem; }
+			#status[data-kind='error'] { color: #cf222e; font-weight: 600; }
+			#status[data-kind='ok'] { color: #1a7f37; }
+			.toolbar #count { color: #57606a; font-size: 0.85rem; }
+			.table-wrap { overflow-x: auto; margin-top: 0.5rem; }
+			table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+			th, td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+			th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+			th[data-active='asc']::after { content: ' ▲'; }
+			th[data-active='desc']::after { content: ' ▼'; }
+			tr.changed { background: #fff1f0; }
+			td.status-changed { color: #cf222e; font-weight: 600; }
+			td.status-confirmed { color: #1a7f37; }
+			td.status-not_found, td.status-error { color: #9a6700; }
+			td .detail { font-weight: 400; font-size: 0.8rem; }
+			td.actions { white-space: nowrap; }
+			td.actions > * { margin-right: 0.3rem; }
+			td.actions button { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+			td.actions a { font-size: 0.85rem; }
+		</style>
+	</body>
+</html>
